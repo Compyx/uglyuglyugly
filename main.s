@@ -2,7 +2,10 @@
 
         * = $0801
 
-        FOCUS_SPRITES = $2000
+        DYSP_HEIGHT = $60
+
+
+        FOCUS_SPRITES = $3d80
 
         SID_PATH = "dexion_intro.sid"
         SID_LOAD = $0830
@@ -18,6 +21,8 @@
         * = SID_LOAD
         .binary SID_PATH, $7e
 
+
+        ; Not required
         .align 256
 
 init
@@ -58,6 +63,29 @@ init
         inc $d019
         cli
         jmp *
+sprite_positions
+        .byte 0, 0
+        .byte 0, 0
+        .byte 0, 0
+
+        .byte $00, $40
+        .byte $50, $40
+        .byte $a0, $40
+        .byte $f0, $40
+        .byte $30, $40
+
+        .byte %10000000
+
+
+;.byte $00, $40
+;        .byte $30, $40
+;        .byte $60, $40
+ ;      .byte $90, $40
+ ;       .byte $c0, $40
+;
+;        .byte 0
+
+
 
 irq1
         ; stabilize raster
@@ -103,7 +131,8 @@ irq2
         sta $d000,x
         dex
         bpl -
-        lda #%01111000
+        ;lda #%11111000
+        lda #%11111000
         sta $d015
 
         ; ldx #$14      ; 2
@@ -121,7 +150,7 @@ irq2
         sta $d025       ; 4
         lda #$0b        ; 2
         sta $d026       ; 4
-        lda #$0f        ; 2
+        lda #$01        ; 2
         sta $d02a       ; 4
         sta $d02b       ; 4
         sta $d02c       ; 4
@@ -130,25 +159,30 @@ irq2
                         ; ---
                         ; 46
 
-        ldx #$80        ; 2
+        ldx #<(FOCUS_SPRITES >> 6) + 0        ; 2
         stx $07fb       ; 4
-        inx             ; 2
+
+        ldx #<(FOCUS_SPRITES >> 6) + 1 + 5        ; 2
         stx $07fc       ; 4
-        inx             ; 2
+
+        ldx #<(FOCUS_SPRITES >> 6) + 2        ; 2
         stx $07fd       ; 4
-        inx             ; 2
+
+        ldx #<(FOCUS_SPRITES >> 6) + 3 + 5        ; 2
         stx $07fe       ; 4
-        inx             ; 2
+
+        ldx #<(FOCUS_SPRITES >> 6) + 4        ; 2
         stx $07ff       ; 4
+
+
                         ; ---
                         ; 30
 
                         ; 76 total-> 101 - 76 = 25
 
         ldx #$02        ; 2
-                        ; {
--       dex             ;   2
-        bne -           ;   3 
+-       dex             ; 2
+        bne -           ; 3 if taken
         nop
         nop
         nop
@@ -160,22 +194,22 @@ irq2
 
         nop
         jsr dysp
+        lda #6
+        sta $d021
+        sta $d020
         lda #$1b
         sta $d011
 
-nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        dec $d020
-        jsr SID_PLAY
         dec $d020
         jsr update_xpos
-        inc $d020
-        inc $d020
-
+        dec $d020
+        jsr update_ypos
+        dec $d020
+        jsr wipe_clock_slide
+        dec $d020
+        jsr update_clock_slide
+        lda #6
+        sta $d020
 
 
         lda #$f9
@@ -206,11 +240,17 @@ irq3
         bpl -
         lda #$13
         sta $d011
+        lda #0
+        sta $d015
         ldx #30
 -       dex
         bpl -
         lda #$1b
         sta $d011
+
+        dec $d020
+        jsr SID_PLAY
+        inc $d020
 
         lda #$29
         ldx #<irq1
@@ -218,118 +258,19 @@ irq3
         jmp do_irq
 
 
-
-
-sprite_positions
-        .byte 0, 0
-        .byte 0, 0
-        .byte 0, 0
-
-        .byte $00, $40
-        .byte $50, $40
-        .byte $a0, $40
-        .byte $f0, $40
-        .byte $30, $40
-
-        .byte %10000000
-
-
-;.byte $00, $40
-;        .byte $30, $40
-;        .byte $60, $40
- ;      .byte $90, $40
- ;       .byte $c0, $40
-;
-;        .byte 0
-
-
-
-
-
-
-        .align 256
-
-dysp
-        ldy #8
-        ;       ldx #$00
-        ldx #$7f
--       lda d011_table,x
-        sta $d016
-        sta $d011
-        sty $d016
-        lda d021_table,x
-        sta $d021
-        lda timing,x            ; max 13
-        sta _delay + 1
-_delay  bpl * + 2
-        cpx #$e0        ; 2
-        cpx #$e0        ; 2
-        cpx #$e0        ; 2
-        cpx #$e0        ; 2
-        cpx #$e0        ; 2
-        cpx #$e0        ; 2
-        bit $ea         ; 3
-        lda d021_table + 40,x
-        sta $d021
-;        nop
-;        nop
-;        nop             ; 2
-;        inx
- ;       cpx #$80
- ;       bne -
-;        nop
-        dex
-        bpl -
-        rts
-
-        .align 256
-d011_table
-        ; inverted
-.for row = 0, row < 128, row += 1
-        .byte $10 + (((row + 3) & 7) ^ 7)
-.next
-
-        .align 256
-d021_table
-        .byte $06, $00, $06, $04, $00, $06, $04, $0e
-        .byte $00, $06, $04, $0e, $0f, $00, $06, $04
-        .byte $0e, $0f, $07, $00 ,$06, $04, $0e, $0f
-        .byte $07, $01, $07, $0f, $0e, $04, $06, $00
-        .byte $07, $0f, $0e, $04, $06, $00, $0f, $0e
-        .byte $04, $06, $00, $0e, $04, $06, $00, $04
-        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
-        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
-        .byte $06, $00, $06, $04, $00, $06, $04, $0e
-        .byte $00, $06, $04, $0e, $0f, $00, $06, $04
-        .byte $0e, $0f, $07, $00 ,$06, $04, $0e, $0f
-        .byte $07, $01, $07, $0f, $0e, $04, $06, $00
-        .byte $07, $0f, $0e, $04, $06, $00, $0f, $0e
-        .byte $04, $06, $00, $0e, $04, $06, $00, $04
-        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
-        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
-
-        .byte $0b ,$00, $0b, $0c, $00, $0b, $0c, $0f
-        .byte $00, $0b, $0c, $0f, $0d, $00, $0b, $0c
-        .byte $0f, $0d, $01, $0d, $0f, $0f, $0c, $0b
-        .byte $00, $0d, $0f, $0c, $0b, $00, $0f, $0c
-        .byte $0b, $00, $0c, $0b, $00, $0b, $00, $00
-
-        .align 256
-
-timing
-        ; inverted
-
-        ; $7f
-        .fill 128 - 16 - 42, 0
-
-        .fill 42, 11
-        .fill 16, 0
-
-
-;        .fill 16, 0
-;        .fill 42, 13
-;        .fill 128-2, 0
-
+upd8_x .macro
+  .if \1 < 5
+    .for i = 1, i < \1, i += 1
+        inx
+    .next
+  .else
+        txa
+        clc
+        adc #\1
+        tax
+  .endif
+.endm
+        X_ADC = 10
 
 update_xpos
         ldx #0
@@ -340,6 +281,8 @@ update_xpos
         lda x_sinus,x
         sta sprite_positions + 6
 
+        #upd8_x X_ADC
+
         lda x_sinus,x
         clc
         adc #$30
@@ -349,6 +292,9 @@ update_xpos
         ora #%00010000
         sta $0334
 +
+
+
+        #upd8_x X_ADC
         lda x_sinus,x
         clc
         adc #$60
@@ -358,6 +304,8 @@ update_xpos
         ora #%00100000
         sta $0334
 +
+
+        #upd8_x X_ADC
         lda x_sinus,x
         clc
         adc #$90
@@ -367,6 +315,8 @@ update_xpos
         ora #%01000000
         sta $0334
 +
+
+        #upd8_x X_ADC
         lda x_sinus,x
         clc
         adc #$c0
@@ -381,13 +331,161 @@ update_xpos
 
         lda update_xpos + 1
         clc
-        adc #1
+        adc #2
         sta update_xpos + 1
         rts
+
+        Y_ADC = 40
+
+update_ypos
+        ldx #0
+
+        ldy #6
+-
+        lda y_sinus,x
+        clc
+        adc #$34
+        sta sprite_positions + 1,y
+        txa
+        clc
+        adc #Y_ADC
+        tax
+        iny
+        iny
+
+        cpy #$10
+        bne -
+
+        lda update_ypos + 1
+        clc
+        adc #3
+        sta update_ypos + 1
+        rts
+
+
 
 
 x_sinus
         .byte 71.5 + 72 * sin(range(256) * rad(360.0/256))
+
+y_sinus
+        .byte 23.5 + 24 * sin(range(256) * rad(360.0/256))
+
+
+
+
+
+
+
+
+        .align 64
+
+dysp
+        ldy #8
+        ;       ldx #$00
+        ldx #DYSP_HEIGHT - 1
+-       lda d011_table,x
+        sta $d016
+        sta $d011
+        sty $d016
+        lda d021_table,x
+        sta $d026
+        lda d025_table,x
+        sta $d025
+
+        lda timing,x            ; max 13
+        sta _delay + 1
+_delay  bpl * + 2
+        cpx #$e0        ; 2
+        cpx #$e0        ; 2
+        cpx #$e0        ; 2
+        cpx #$e0        ; 2
+        cpx #$e0        ; 2
+        cpx #$e0        ; 2
+        bit $ea         ; 3
+;        nop
+;        nop
+;        nop             ; 2
+;        inx
+ ;       cpx #$80
+ ;       bne -
+;        nop
+        dex
+        bpl -
+        rts
+
+        .align 128
+d011_table
+        ; inverted
+.for row = 0, row < 96, row += 1
+        .byte $10 + (((row + 3) & 7) ^ 7)
+.next
+
+        .align 128
+d021_table
+        .byte $06, $00, $06, $04, $00, $06, $04, $0e
+        .byte $00, $06, $04, $0e, $0f, $00, $06, $04
+        .byte $0e, $0f, $0d, $00 ,$06, $04, $0e, $0f
+        .byte $0d, $01, $0d, $0f, $0e, $04, $06, $00
+        .byte $0d, $0f, $0e, $04, $06, $00, $0f, $0e
+        .byte $04, $06, $00, $0e, $04, $06, $00, $04
+        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
+        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
+        .byte $06, $00, $06, $04, $00, $06, $04, $0e
+        .byte $00, $06, $04, $0e, $0f, $00, $06, $04
+        .byte $0e, $0f, $07, $00 ,$06, $04, $0e, $0f
+        .byte $07, $01, $07, $0f, $0e, $04, $06, $00
+        .byte $07, $0f, $0e, $04, $06, $00, $0f, $0e
+        .byte $04, $06, $00, $0e, $04, $06, $00, $04
+        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
+        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
+;
+;        .byte $0b ,$00, $0b, $0c, $00, $0b, $0c, $0f
+;        .byte $00, $0b, $0c, $0f, $0d, $00, $0b, $0c
+;        .byte $0f, $0d, $01, $0d, $0f, $0f, $0c, $0b
+;        .byte $00, $0d, $0f, $0c, $0b, $00, $0f, $0c
+;        .byte $0b, $00, $0c, $0b, $00, $0b, $00, $00
+
+        .align 128
+d025_table
+        .byte $09, $00, $09, $02, $00, $09, $02, $0a
+        .byte $00, $09, $02, $0a, $0f, $00, $09, $02
+        .byte $0a, $0f, $07, $00, $09, $02, $0a, $0f
+        .byte $07, $01, $07, $0f, $0a, $02, $09, $00
+        .byte $07, $0f, $0a, $02, $09, $00, $0f, $0a
+        .byte $02, $09, $00, $0a, $02, $09, $00, $02
+        .byte $09, $00, $09, $00
+        .byte $09, $00, $09, $02, $00, $09, $02, $0a
+        .byte $00, $09, $02, $0a, $0f, $00, $09, $02
+        .byte $0a, $0f, $07, $00, $09, $02, $0a, $0f
+        .byte $07, $01, $07, $0f, $0a, $02, $09, $00
+        .byte $07, $0f, $0a, $02, $09, $00, $0f, $0a
+        .byte $02, $09, $00, $0a, $02, $09, $00, $02
+        .byte $09, $00, $09, $00
+
+        .align 128
+timing
+        ; inverted
+
+        ; $7f
+        .fill DYSP_HEIGHT - 16 - 42, 0
+
+        .fill 42, 9
+
+        .fill 16, 0             ; this assumes Y pos $40
+
+
+;        .fill 16, 0
+;        .fill 42, 13
+;        .fill 128-2, 0
+
+        .fill 32 ,0
+
+
+
+mask_table
+        .fill 128, 0
+
 
 
 cycle_table
@@ -395,7 +493,7 @@ cycle_table
 
         .byte 0         ; no sprites,   use full clock slide
         .byte 5         ; mask %0000 1000       sprite 3 only
-        .byte 7         ; mask %0001 0000       sprite 4 only
+        .byte 5         ; mask %0001 0000       sprite 4 only
         .byte 7         ; mask %0001 1000       sprite 3 & 4
 
         .byte 5         ; mask %0010 0000       sprite 5 only
@@ -414,10 +512,127 @@ cycle_table
         .byte 11        ; mask %0111 1000       sprite 6 & 5 & 4 & 3
 
 
+        .byte 5         ; mask %1000 0000       sprite 7
+        .byte 9         ; mask %1000 1000       sprite 7 & 3
+        .byte 9         ; mask %1001 0000       sprite 7 & 4
+        .byte 12        ; mask %1001 1000       sprite 7 & 3 & 4
+
+        .byte 9         ; mask %1010 0000       sprite 7 & 5
+        .byte 13        ; mask %1010 1000       sprite 7 & 5 & 3
+        .byte 11        ; mask %1011 0000       sprute 7 & 5 & 4
+        .byte 13        ; mask %1011 1000       sprite 7 & 5 & 3 & 4
+
+        .byte 7         ; mask %1100 0000       sprite 7 & 6
+        .byte 12        ; mask %1100 1000       sprite 7 & 6 & 3
+        .byte 11        ; mask %1101 0000       sprite 7 & 6 & 4
+        .byte 13        ; mask %1101 1000       sprite 7 & 6 & 3 & 4
+
+        .byte 9         ; mask %1110 0000       sprite 7 & 6 & 5
+        .byte 13        ; mask %1110 1000       sprite 7 & 6 & 5 & 3
+        .byte 11        ; mask %1111 0000       sprite 7 & 6 & 5 & 4
+        .byte 13        ; mask %1111 1000       sprite 7 & 6 & 5 & 4 & 3
+
+
+wipe_clock_slide
+;        ldx #DYSP_HEIGHT - 1
+;        lda #0
+;;-       sta timing,x
+;        sta mask_table,x
+;        dex
+;        bpl -
+;        rts
+        lda #0
+.for i = 0, i < DYSP_HEIGHT + 5, i += 1
+        sta timing - 5 + i
+        sta mask_table + i
+.next
+        rts
+
+
+
+
+
+update_clock_slide
+        dec $d020
+
+        lda sprite_positions + 7
+        sec
+        sbc #$34
+        tay
+        lda #%00000001
+
+        ; turn into speedcode?
+        ldx #41
+-       sta mask_table,y
+        iny
+        dex
+        bpl -
+
+        dec $d020
+        lda sprite_positions + 9
+        sec
+        sbc #$34
+        tay
+        lda #%00000010
+        jsr update_mask_table
+
+        dec $d020
+        lda sprite_positions + 11
+        sec
+        sbc #$34
+        tay
+        lda #%00000100
+        jsr update_mask_table
+
+        dec $d020
+        lda sprite_positions + 13
+        sec
+        sbc #$34
+        tay
+        lda #%00001000
+        jsr update_mask_table
+
+        dec $d020
+        lda sprite_positions + 15
+        sec
+        sbc #$34
+        tay
+        lda #%00010000
+        jsr update_mask_table
+
+
+        dec $d020
+
+        ; generate final clock slide table
+
+        ; speedcode
+.for i = 0, i < DYSP_HEIGHT, i += 1
+
+        ldy mask_table + i
+        lda cycle_table,y
+        sta timing + (DYSP_HEIGHT - i) - 5      ;why again?
+.next
+        rts
+
+
+
+
+; speedcode
+update_mask_table
+        sta $02
+.for i = 0, i < 42, i += 1
+        lda mask_table + i,y
+        ora $02
+        sta mask_table + i,y
+.next
+        rts
+
+
+
+
+
 
         * = FOCUS_SPRITES
-        .binary "sprites.bin"
-
-
+        .binary "sprites3.bin"
 
 
