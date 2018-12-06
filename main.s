@@ -278,7 +278,6 @@ irq2
         ldx #7
 -       dex
         bpl -
-
         jsr stretcher
         lda #0
         sta $d015
@@ -666,49 +665,46 @@ update_clock_slide
         sec
         sbc #$34
         tay
-        lda #%00000001
+;        lda #%00000001
 
-        ; turn into speedcode?
-        .for i = 0, i < 42, i += 1
-        sta mask_table + i,y
-        .next
+;        ; turn into speedcode?
+;        .for i = 0, i < 42, i += 1
+;        sta mask_table + i,y
+;        .next
 ;        ldx #41
 ;-       sta mask_table,y
 ;        iny
 ;        dex
 ;        bpl -
+        jsr update_mask_table_00001
 
         dec $d020
         lda sprite_positions + 9
         sec
         sbc #$34
         tay
-        lda #%00000010
-        jsr update_mask_table
+        jsr update_mask_table_00010
 
         dec $d020
         lda sprite_positions + 11
         sec
         sbc #$34
         tay
-        lda #%00000100
-        jsr update_mask_table
+        jsr update_mask_table_00100
 
         dec $d020
         lda sprite_positions + 13
         sec
         sbc #$34
         tay
-        lda #%00001000
-        jsr update_mask_table
+        jsr update_mask_table_01000
 
         dec $d020
         lda sprite_positions + 15
         sec
         sbc #$34
         tay
-        lda #%00010000
-        jsr update_mask_table
+        jsr update_mask_table_10000
 
 
         dec $d020
@@ -736,6 +732,49 @@ update_mask_table
         sta mask_table + i,y
 .next
         rts
+
+
+update_mask_table_00001
+        lda #1
+        .for i = 0, i < 42, i += 1
+        sta mask_table + i,y
+        .next
+        rts
+
+update_mask_table_00010
+        .for i = 0, i < 42, i += 1
+        lda mask_table + i,y
+        ora #%00000010
+        sta mask_table + i,y
+        .next
+        rts
+
+update_mask_table_00100
+        .for i = 0, i < 42, i += 1
+        lda mask_table + i,y
+        ora #%0000100
+        sta mask_table + i,y
+        .next
+        rts
+
+update_mask_table_01000
+        .for i = 0, i < 42, i += 1
+        lda mask_table + i,y
+        ora #%0001000
+        sta mask_table + i,y
+        .next
+        rts
+
+update_mask_table_10000
+        .for i = 0, i < 42, i += 1
+        lda mask_table + i,y
+        ora #%0010000
+        sta mask_table + i,y
+        .next
+        rts
+
+
+
 
 
 color_cycle_text .proc
@@ -778,21 +817,23 @@ text_colors
 
 .page
 stretcher
-        ldx #0
+        ldx #71
         ldy #0
 -       sty $d017
         lda d017_table,x
         sta $d017
         lda d011_table2 + 0 ,x
-        bit $ea
-        nop
-        nop
+;        bit $ea
+;        nop
+;        nop
+;        nop
         dec $d016
         sta $d011
         inc $d016
-        inx
-        cpx #72
-        bne -
+        lda d021_table,x
+        sta $d021,y
+        dex
+        bpl -
         rts
 .endp
 
@@ -819,17 +860,24 @@ d017_table
         .byte $ff, $ff, $00, 0
         .byte $ff, $ff, $00, 0
 
-        .byte $ff, $ff, $00, 0
-        .byte $ff, $ff, $00, 0
-        .byte $ff, $00, $00, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
 .endp
 
 .page
 d011_table2
-        .for i = 0, i < 96, i += 1
-        .byte i & 7 | $18
+        .for i = 0, i < 80, i += 1
+        .byte (i & 7 ^ 7) | $18
         .next
 .endp
+
+
+
+do_stretch_shit
+        ldx #0
+
 
 
 
