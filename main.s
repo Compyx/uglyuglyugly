@@ -7,23 +7,21 @@
 
         FOCUS_SPRITES = $3d80
 
-        SID_PATH = "dexion_intro.sid"
-        SID_LOAD = $0830
-        SID_INIT = $0b06
-        SID_PLAY = $0b3e
+;        SID_PATH = "dexion_intro.sid"
+;        SID_LOAD = $0830
+;        SID_INIT = $0b06
+;        SID_PLAY = $0b3e
+
+        SID_PATH = "Old_Level_2.sid"
+        SID_LOAD = $1000
+        SID_INIT = $1000
+        SID_PLAY = $1003
 
 
         .word (+), 2018
         .null $9e, format("%d", init)
 +       .word 0
 
-
-        * = SID_LOAD
-        .binary SID_PATH, $7e
-
-
-        ; Not required
-        .align 256
 
 init
         jsr $fda3
@@ -34,6 +32,8 @@ init
         sta $01
         lda #0
         jsr SID_INIT
+
+        jsr screen_setup
 
         lda #$7f
         sta $dc0d
@@ -46,6 +46,8 @@ init
         stx $d01a
         lda #$1b
         sta $d011
+        lda #$17
+        sta $d018
         lda #$29
         ldx #<irq1
         ldy #>irq1
@@ -201,16 +203,85 @@ irq2
         sta $d011
 
         dec $d020
-        jsr update_xpos
-        dec $d020
-        jsr update_ypos
-        dec $d020
         jsr wipe_clock_slide
         dec $d020
-        jsr update_clock_slide
-        lda #6
-        sta $d020
+        ; jsr update_clock_slide
 
+;        dec $d020
+;        jsr SID_PLAY
+;        dec $d020
+
+        lda #$ff
+        sta $d015
+        sta $d01d
+        sta $d01c
+        lda #0
+        sta $d017
+
+        lda #$a4
+        sta $d001
+        sta $d003
+        sta $d005
+        sta $d007
+        sta $d009
+        sta $d00b
+        sta $d00d
+        sta $d00f
+        lda #$00
+        sta $d000
+        lda #$30
+        sta $d002
+        lda #$60
+        sta $d004
+        lda #$90
+        sta $d006
+        lda #$c0
+        sta $d008
+        lda #$f0
+        sta $d00a
+        lda #$20
+        sta $d00c
+        lda #$50
+        sta $d00e
+        lda #%11000000
+        sta $d010
+        ldx #$f8
+        stx $07f8
+        inx
+        stx $07f9
+        inx
+        stx $07fa
+        inx
+        stx $07fb
+        inx
+        stx $07fc
+        inx
+        stx $07fd
+        inx
+        stx $07fe
+        inx
+        stx $07ff
+        lda #$01
+        sta $d025
+        lda #$0e
+        sta $d026
+        lda #$03
+        sta $d027
+        sta $d028
+        sta $d029
+        sta $d02a
+        sta $d02b
+        sta $d02c
+        sta $d02d
+        sta $d02e
+
+        ldx #7
+-       dex
+        bpl -
+
+        jsr stretcher
+        lda #0
+        sta $d015
 
         lda #$f9
         ldx #<irq3
@@ -235,42 +306,58 @@ irq3
         pha
         tya
         pha
-        ldx #7
+        ldx #3
 -       dex
         bpl -
         lda #$13
         sta $d011
         lda #0
         sta $d015
-        ldx #30
+        ldx #50
 -       dex
         bpl -
         lda #$1b
         sta $d011
-
+        dec $d020
+        jsr update_xpos
+        dec $d020
+        jsr update_ypos
         dec $d020
         jsr SID_PLAY
-        inc $d020
+;        jsr wipe_clock_slide
+        dec $d020
+        jsr update_clock_slide
+        dec $d020
+        ;jsr color_cycle_text
+        lda #6
+        sta $d020
+
+
 
         lda #$29
         ldx #<irq1
         ldy #>irq1
         jmp do_irq
 
+screen_setup .proc
+        ldx #$4f
+-       lda presents_text,x
+        sta $0400,x
+        lda #$01
+        sta $d800,x
+        dex
+        bpl -
+        rts
+.pend
 
 upd8_x .macro
-  .if \1 < 5
-    .for i = 1, i < \1, i += 1
-        inx
-    .next
-  .else
         txa
         clc
         adc #\1
+        and #$7f
         tax
-  .endif
 .endm
-        X_ADC = 10
+        X_ADC = 16
 
 update_xpos
         ldx #0
@@ -281,7 +368,7 @@ update_xpos
         lda x_sinus,x
         sta sprite_positions + 6
 
-        #upd8_x X_ADC
+        #upd8_x X_ADC - 2
 
         lda x_sinus,x
         clc
@@ -292,9 +379,7 @@ update_xpos
         ora #%00010000
         sta $0334
 +
-
-
-        #upd8_x X_ADC
+        #upd8_x X_ADC - 4
         lda x_sinus,x
         clc
         adc #$60
@@ -305,7 +390,7 @@ update_xpos
         sta $0334
 +
 
-        #upd8_x X_ADC
+        #upd8_x X_ADC - 6
         lda x_sinus,x
         clc
         adc #$90
@@ -316,7 +401,7 @@ update_xpos
         sta $0334
 +
 
-        #upd8_x X_ADC
+        #upd8_x X_ADC - 8
         lda x_sinus,x
         clc
         adc #$c0
@@ -331,7 +416,8 @@ update_xpos
 
         lda update_xpos + 1
         clc
-        adc #2
+        adc #1
+        and #$7f
         sta update_xpos + 1
         rts
 
@@ -349,6 +435,7 @@ update_ypos
         txa
         clc
         adc #Y_ADC
+        and #$7f
         tax
         iny
         iny
@@ -359,19 +446,24 @@ update_ypos
         lda update_ypos + 1
         clc
         adc #3
+        and #$7f
         sta update_ypos + 1
         rts
 
 
+presents_text
+        .enc "screen"
+        ;      0123456789abcdef0123456789abcdef01234567
+        .text "Compyx of Focus not so proudly presents:"
+        .text "- The ugliest Focus intro ever created -"
+
 
 
 x_sinus
-        .byte 71.5 + 72 * sin(range(256) * rad(360.0/256))
+        .byte 71.5 + 72 * sin(range(128) * rad(360.0/128))
 
 y_sinus
-        .byte 23.5 + 24 * sin(range(256) * rad(360.0/256))
-
-
+        .byte 23.5 + 24 * sin(range(128) * rad(360.0/128))
 
 
 
@@ -379,11 +471,11 @@ y_sinus
 
 
         .align 64
-
 dysp
         ldy #8
         ;       ldx #$00
         ldx #DYSP_HEIGHT - 1
+.page
 -       lda d011_table,x
         sta $d016
         sta $d011
@@ -412,6 +504,7 @@ _delay  bpl * + 2
 ;        nop
         dex
         bpl -
+.endp
         rts
 
         .align 128
@@ -421,7 +514,8 @@ d011_table
         .byte $10 + (((row + 3) & 7) ^ 7)
 .next
 
-        .align 128
+        .align 256
+.page
 d021_table
         .byte $06, $00, $06, $04, $00, $06, $04, $0e
         .byte $00, $06, $04, $0e, $0f, $00, $06, $04
@@ -445,8 +539,9 @@ d021_table
 ;        .byte $0f, $0d, $01, $0d, $0f, $0f, $0c, $0b
 ;        .byte $00, $0d, $0f, $0c, $0b, $00, $0f, $0c
 ;        .byte $0b, $00, $0c, $0b, $00, $0b, $00, $00
+.endp
 
-        .align 128
+.page
 d025_table
         .byte $09, $00, $09, $02, $00, $09, $02, $0a
         .byte $00, $09, $02, $0a, $0f, $00, $09, $02
@@ -462,32 +557,11 @@ d025_table
         .byte $07, $0f, $0a, $02, $09, $00, $0f, $0a
         .byte $02, $09, $00, $0a, $02, $09, $00, $02
         .byte $09, $00, $09, $00
+.endp
 
         .align 128
-timing
-        ; inverted
 
-        ; $7f
-        .fill DYSP_HEIGHT - 16 - 42, 0
-
-        .fill 42, 9
-
-        .fill 16, 0             ; this assumes Y pos $40
-
-
-;        .fill 16, 0
-;        .fill 42, 13
-;        .fill 128-2, 0
-
-        .fill 32 ,0
-
-
-
-mask_table
-        .fill 128, 0
-
-
-
+.page
 cycle_table
         ; Number of cycles to skip in the clock slide
 
@@ -531,6 +605,39 @@ cycle_table
         .byte 13        ; mask %1110 1000       sprite 7 & 6 & 5 & 3
         .byte 11        ; mask %1111 0000       sprite 7 & 6 & 5 & 4
         .byte 13        ; mask %1111 1000       sprite 7 & 6 & 5 & 4 & 3
+.endp
+
+        .cerror * > $1000, "Code overlaps SID"
+
+
+        * = SID_LOAD
+        .binary SID_PATH, $7e
+
+        .align 128
+.page
+timing
+        ; inverted
+
+        ; $7f
+        .fill DYSP_HEIGHT - 16 - 42, 0
+
+        .fill 42, 9
+
+        .fill 16, 0             ; this assumes Y pos $40
+
+
+;        .fill 16, 0
+;        .fill 42, 13
+;        .fill 128-2, 0
+
+        .fill 32 ,0
+.endp
+
+        .align 256
+.page
+mask_table
+        .fill 128, 0
+.endp
 
 
 wipe_clock_slide
@@ -562,11 +669,14 @@ update_clock_slide
         lda #%00000001
 
         ; turn into speedcode?
-        ldx #41
--       sta mask_table,y
-        iny
-        dex
-        bpl -
+        .for i = 0, i < 42, i += 1
+        sta mask_table + i,y
+        .next
+;        ldx #41
+;-       sta mask_table,y
+;        iny
+;        dex
+;        bpl -
 
         dec $d020
         lda sprite_positions + 9
@@ -628,7 +738,98 @@ update_mask_table
         rts
 
 
+color_cycle_text .proc
+        ldx #0
+-       lda $d801,x
+        sta $d800,x
+        lda $d829,x
+        sta $d828,x
+        inx
+        cpx #$28
+        bne -
+index
+        ldx #0
+        lda text_colors,x
+        bmi ++
+        sta $d827
+        sta $d84f
 
+delay   lda #3
+        beq +
+        dec delay +1
+        rts
++       lda #3
+        sta delay + 1
+
+        inc index +1
+        rts
++
+        ldx #0
+        stx index +1
+        rts
+.pend
+
+text_colors
+        .byte 6, 14, 3, 1, 3, 14, 6, 0
+        .byte 2, 10, 7, 1, 7, 10, 2, 0
+        .byte 11, 12, 15, 1, 15, 12, 11, 0
+        .byte 9, 5, 13, 1, 13, 5, 9, 0
+        .byte $ff
+
+.page
+stretcher
+        ldx #0
+        ldy #0
+-       sty $d017
+        lda d017_table,x
+        sta $d017
+        lda d011_table2 + 0 ,x
+        bit $ea
+        nop
+        nop
+        dec $d016
+        sta $d011
+        inc $d016
+        inx
+        cpx #72
+        bne -
+        rts
+.endp
+
+        .align 128
+.page
+d017_table
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $00, 0
+        .byte $ff, $ff, $00, 0
+        .byte $ff, $ff, $00, 0
+
+        .byte $ff, $ff, $00, 0
+        .byte $ff, $ff, $00, 0
+        .byte $ff, $00, $00, 0
+.endp
+
+.page
+d011_table2
+        .for i = 0, i < 96, i += 1
+        .byte i & 7 | $18
+        .next
+.endp
 
 
 
