@@ -7,6 +7,8 @@
 
         FOCUS_SPRITES = $3d80
 
+        FONT_SPRITES = $3000
+
 ;        SID_PATH = "dexion_intro.sid"
 ;        SID_LOAD = $0830
 ;        SID_INIT = $0b06
@@ -196,7 +198,7 @@ irq2
 
         nop
         jsr dysp
-        lda #6
+        lda #0
         sta $d021
         sta $d020
         lda #$1b
@@ -245,21 +247,21 @@ xpos7   lda #$50
         sta $d00e
 xmsb    lda #%11000000
         sta $d010
-xprt0   ldx #$f8
+xptr0   ldx #$f8
         stx $07f8
-xprt1   ldx #$f9
+xptr1   ldx #$f9
         stx $07f9
-xprt2   ldx #$fa
+xptr2   ldx #$fa
         stx $07fa
-xprt3   ldx #$fb
+xptr3   ldx #$fb
         stx $07fb
-xprt4   ldx #$fc
+xptr4   ldx #$fc
         stx $07fc
-xprt5   ldx #$fd
+xptr5   ldx #$fd
         stx $07fd
-xprt6   ldx #$fe
+xptr6   ldx #$fe
         stx $07fe
-xprt7   ldx #$ff
+xptr7   ldx #$ff
         stx $07ff
         lda #$01
         sta $d025
@@ -334,7 +336,7 @@ irq3
         jsr update_clock_slide
         dec $d020
         ;jsr color_cycle_text
-        lda #6
+        lda #0
         sta $d020
 
 
@@ -522,6 +524,7 @@ d011_table
         .align 256
 .page
 d021_table
+        .byte 0, 0
         .byte $06, $00, $06, $04, $00, $06, $04, $0e
         .byte $00, $06, $04, $0e, $0f, $00, $06, $04
         .byte $0e, $0f, $0d, $00 ,$06, $04, $0e, $0f
@@ -828,16 +831,16 @@ stretcher
 -       sty $d017
         lda d017_table,x
         sta $d017
-        lda d011_table2 + 0 ,x
+        lda d021_table,x
 ;        bit $ea
 ;        nop
 ;        nop
 ;        nop
         dec $d016
-        sta $d011
+        sta $d021
         inc $d016
-        lda d021_table,x
-        sta $d021,y
+        lda d011_table2,x
+        sta $d011,y
         dex
         bpl -
         rts
@@ -846,8 +849,8 @@ stretcher
         .align 128
 .page
 d017_table
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $ff, 0
+        .byte $00, $ff, $ff, $ff
+        .byte $00, $ff, $ff, $ff
         .byte $ff, $ff, $ff, 0
         .byte $ff, $ff, $ff, 0
 
@@ -866,10 +869,8 @@ d017_table
         .byte $ff, $ff, $00, 0
         .byte $ff, $ff, $00, 0
 
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, $ff
+        .byte $ff, $ff, $ff, $ff
 .endp
 
 .page
@@ -885,8 +886,7 @@ scroll_x
 scroll_msb
         .byte 0
 
-scroll_sprites
-
+update_scroll_pos
         lda scroll_x
         clc
         adc #$f8 - $40
@@ -917,18 +917,78 @@ scroll_sprites
         ora #%11100000
         sta scroll_msb
         sta xmsb + 1
+        rts
 
+scroll_sprites
 
         lda scroll_x
         sec
-        sbc #2
+        sbc #4
         and #$3f
         sta scroll_x
+        bcc +
+
+        jsr update_scroll_pos
+
+        rts
++
+
+
+
++
+        lda xptr1 + 1
+        sta xptr0 + 1
+        lda xptr2 + 1
+        sta xptr1 + 1
+        lda xptr3 + 1
+        sta xptr2 + 1
+        lda xptr4 + 1
+        sta xptr3 + 1
+        lda xptr5 + 1
+        sta xptr4 + 1
+        lda xptr6 + 1
+        sta xptr5 + 1
+        lda xptr7 + 1
+        sta xptr6 + 1
+
+
+        jsr update_scroll_pos
+
+txtidx  lda scroll_text
+        bne +
+        lda #<scroll_text
+        ldx #>scroll_text
+        sta txtidx + 1
+        stx txtidx + 2
+
+        rts
++
+        clc
+        and #$1f
+        adc #$c0
+        sta xptr7 + 1
+
+        inc txtidx + 1
+        bne +
+        inc txtidx + 2
++
         rts
 
 
+scroll_text
+        .enc "screen"
+        .text "hello world compyx here"
+        .byte $1b, $1b
+        .byte 0
 
 
+
+
+
+
+
+        * = FONT_SPRITES
+        .binary "spritefont.bin"
 
 
         * = FOCUS_SPRITES
