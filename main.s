@@ -278,6 +278,11 @@ irq2
         ldx #7
 -       dex
         bpl -
+        nop
+        nop
+        ;bit $ea
+        nop
+        nop
         jsr stretcher
         lda #0
         sta $d015
