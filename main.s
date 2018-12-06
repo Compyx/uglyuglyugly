@@ -227,39 +227,39 @@ irq2
         sta $d00b
         sta $d00d
         sta $d00f
-        lda #$00
+xpos0   lda #$00
         sta $d000
-        lda #$30
+xpos1   lda #$30
         sta $d002
-        lda #$60
+xpos2   lda #$60
         sta $d004
-        lda #$90
+xpos3   lda #$90
         sta $d006
-        lda #$c0
+xpos4   lda #$c0
         sta $d008
-        lda #$f0
+xpos5   lda #$f0
         sta $d00a
-        lda #$20
+xpos6   lda #$20
         sta $d00c
-        lda #$50
+xpos7   lda #$50
         sta $d00e
-        lda #%11000000
+xmsb    lda #%11000000
         sta $d010
-        ldx #$f8
+xprt0   ldx #$f8
         stx $07f8
-        inx
+xprt1   ldx #$f9
         stx $07f9
-        inx
+xprt2   ldx #$fa
         stx $07fa
-        inx
+xprt3   ldx #$fb
         stx $07fb
-        inx
+xprt4   ldx #$fc
         stx $07fc
-        inx
+xprt5   ldx #$fd
         stx $07fd
-        inx
+xprt6   ldx #$fe
         stx $07fe
-        inx
+xprt7   ldx #$ff
         stx $07ff
         lda #$01
         sta $d025
@@ -317,6 +317,7 @@ irq3
         sta $d011
         lda #0
         sta $d015
+        jsr scroll_sprites
         ldx #50
 -       dex
         bpl -
@@ -879,9 +880,53 @@ d011_table2
 .endp
 
 
+scroll_x
+        .byte 0
+scroll_msb
+        .byte 0
 
-do_stretch_shit
-        ldx #0
+scroll_sprites
+
+        lda scroll_x
+        clc
+        adc #$f8 - $40
+        sta xpos0 + 1
+        lda scroll_msb
+        ora #%00000001
+        sta scroll_msb
+
+        lda scroll_x
+        sta xpos1 + 1
+
+        clc
+        adc #$40
+        sta xpos2 + 1
+        adc #$40
+        sta xpos3 + 1
+        adc #$40
+        sta xpos4 + 1
+        lda scroll_x
+        sta xpos5 + 1
+        clc
+        adc #$40
+        sta xpos6 + 1
+        adc #$40
+        sta xpos7 + 1
+
+        lda scroll_msb
+        ora #%11100000
+        sta scroll_msb
+        sta xmsb + 1
+
+
+        lda scroll_x
+        sec
+        sbc #2
+        and #$3f
+        sta scroll_x
+        rts
+
+
 
 
 
