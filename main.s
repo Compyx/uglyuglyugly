@@ -288,6 +288,8 @@ xptr7   ldx #$ff
         jsr stretcher
         lda #0
         sta $d015
+        lda $d012
+        sta $0400
 
         lda #$f9
         ldx #<irq3
@@ -320,13 +322,15 @@ irq3
         lda #0
         sta $d015
         jsr scroll_sprites
-        ldx #50
--       dex
-        bpl -
-        lda #$1b
-        sta $d011
+;        ldx #50
+;-       dex
+;        bpl -
+;        lda #$1b
+;        sta $d011
         dec $d020
         jsr update_xpos
+        lda #$1b
+        sta $d011
         dec $d020
         jsr update_ypos
         dec $d020
@@ -733,14 +737,14 @@ update_clock_slide
 
 
 ; speedcode
-update_mask_table
-        sta $02
-.for i = 0, i < 42, i += 1
-        lda mask_table + i,y
-        ora $02
-        sta mask_table + i,y
-.next
-        rts
+;update_mask_table .
+;        sta $02
+;.for i = 0, i < 42, i += 1
+;        lda mask_table + i,y
+;        ora $02
+;        sta mask_table + i,y
+;.next
+;        rts
 
 
 update_mask_table_00001
@@ -849,8 +853,8 @@ stretcher
         .align 128
 .page
 d017_table
+        .byte $00, $ff, $ff, $00
         .byte $00, $ff, $ff, $ff
-        .byte $00, $ff, $ff, $ff
         .byte $ff, $ff, $ff, 0
         .byte $ff, $ff, $ff, 0
 
@@ -869,7 +873,7 @@ d017_table
         .byte $ff, $ff, $00, 0
         .byte $ff, $ff, $00, 0
 
-        .byte $ff, $ff, $ff, $ff
+        .byte $ff, $ff, $ff, $00
         .byte $ff, $ff, $ff, $ff
 .endp
 
