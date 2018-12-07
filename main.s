@@ -247,27 +247,27 @@ xpos7   lda #$50
         sta $d00e
 xmsb    lda #%11000000
         sta $d010
-xptr0   ldx #$f8
+xptr0   ldx #$c0
         stx $07f8
-xptr1   ldx #$f9
+xptr1   ldx #$c0
         stx $07f9
-xptr2   ldx #$fa
+xptr2   ldx #$c0
         stx $07fa
-xptr3   ldx #$fb
+xptr3   ldx #$c0
         stx $07fb
-xptr4   ldx #$fc
+xptr4   ldx #$c0
         stx $07fc
-xptr5   ldx #$fd
+xptr5   ldx #$c0
         stx $07fd
-xptr6   ldx #$fe
+xptr6   ldx #$c0
         stx $07fe
-xptr7   ldx #$ff
+xptr7   ldx #$c0
         stx $07ff
-        lda #$01
+xmc1    lda #$01
         sta $d025
-        lda #$0e
+xmc2    lda #$0e
         sta $d026
-        lda #$03
+xscol   lda #$03
         sta $d027
         sta $d028
         sta $d029
@@ -290,6 +290,9 @@ xptr7   ldx #$ff
         sta $d015
         lda $d012
         sta $0400
+        dec $d020
+        jsr color_cycle_text
+        inc $d020
 
         lda #$f9
         ldx #<irq3
@@ -790,42 +793,12 @@ update_mask_table_10000
 
 
 
-color_cycle_text .proc
-        ldx #0
--       lda $d801,x
-        sta $d800,x
-        lda $d829,x
-        sta $d828,x
-        inx
-        cpx #$28
-        bne -
-index
-        ldx #0
-        lda text_colors,x
-        bmi ++
-        sta $d827
-        sta $d84f
-
-delay   lda #3
-        beq +
-        dec delay +1
-        rts
-+       lda #3
-        sta delay + 1
-
-        inc index +1
-        rts
-+
-        ldx #0
-        stx index +1
-        rts
-.pend
 
 text_colors
-        .byte 6, 14, 3, 1, 3, 14, 6, 0
-        .byte 2, 10, 7, 1, 7, 10, 2, 0
-        .byte 11, 12, 15, 1, 15, 12, 11, 0
-        .byte 9, 5, 13, 1, 13, 5, 9, 0
+        .byte 6, 14, 3, 1, 3, 14, 6, 0, 0, 0, 0, 0, 0, 0
+        .byte 2, 10, 7, 1, 7, 10, 2, 0, 0, 0, 0, 0, 0, 0
+        .byte 11, 12, 15, 1, 15, 12, 11, 0, 0, 0, 0, 0, 0
+        .byte 9, 5, 13, 1, 13, 5, 9, 0, 0, 0, 0, 0, 0
         .byte $ff
 
 .page
@@ -889,6 +862,13 @@ scroll_x
         .byte 0
 scroll_msb
         .byte 0
+
+scroll_coder_colors
+        .byte 1, 6, 14, 0
+        .byte 7, 2, 10, 0
+        .byte 15, 11, 12, 0
+        .byte 1, 5, 13, 0
+
 
 update_scroll_pos
         lda scroll_x
@@ -967,7 +947,20 @@ txtidx  lda scroll_text
 
         rts
 +
-        clc
+        cmp #$40
+        bcc +
+        and #$07
+        asl
+        asl
+        tax
+        lda scroll_coder_colors,x
+        sta xmc1 + 1
+        lda scroll_coder_colors + 1,x
+        sta xmc2 + 1
+        lda scroll_coder_colors + 2,x
+        sta xscol + 1
+        lda #$00
++
         and #$1f
         adc #$c0
         sta xptr7 + 1
@@ -983,6 +976,12 @@ scroll_text
         .enc "screen"
         .text "hello world compyx here"
         .byte $1b, $1b
+        .byte $41
+        .text "more awesome coder colors"
+        .byte $1b, $1b
+        .byte $42
+        .text "even better colors    "
+        .byte $43
         .byte 0
 
 
@@ -998,4 +997,39 @@ scroll_text
         * = FOCUS_SPRITES
         .binary "sprites3.bin"
 
+
+
+        * = $4000
+
+color_cycle_text .proc
+
+        .for i = 0, i < 39, i += 1
+
+        lda $d801 + i
+        sta $d800 + i
+        sta $d828 + i
+
+        .next
+
+index
+        ldx #0
+        lda text_colors,x
+        bmi ++
+        sta $d827
+        sta $d84f
+
+delay   lda #3
+        beq +
+        dec delay +1
+        rts
++       lda #3
+        sta delay + 1
+
+        inc index +1
+        rts
++
+        ldx #0
+        stx index +1
+        rts
+.pend
 
