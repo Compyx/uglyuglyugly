@@ -129,6 +129,7 @@ irq2
         cmp $d012
         beq +
 +
+        dec $d020
 
         ldx #$10
 -       lda sprite_positions,x
@@ -191,9 +192,9 @@ irq2
         nop
         nop
         nop
-        nop
-        nop
-        nop
+;        nop
+;        nop
+;        nop
         ;bit $ea
 
         nop
@@ -342,7 +343,10 @@ irq3
         dec $d020
         jsr update_clock_slide
         dec $d020
-        ;jsr color_cycle_text
+        jsr wipe_stretch_table
+        dec $d020
+        jsr update_stretch_table
+
         lda #0
         sta $d020
 
@@ -826,28 +830,28 @@ stretcher
         .align 128
 .page
 d017_table
-        .byte $00, $ff, $ff, $00
         .byte $00, $ff, $ff, $ff
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $ff, 0
-
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $ff, 0
-
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $ff, 0
-
-        .byte $ff, $ff, $ff, 0
-        .byte $ff, $ff, $00, 0
-        .byte $ff, $ff, $00, 0
-        .byte $ff, $ff, $00, 0
-
-        .byte $ff, $ff, $ff, $00
+        .byte $00, $ff, $ff, $ff
         .byte $ff, $ff, $ff, $ff
+        .byte $ff, $ff, $ff, 0
+
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $ff, 0
+
+        .byte $ff, $ff, $ff, 0
+        .byte $ff, $ff, $00, 0
+        .byte $ff, $ff, $00, 0
+        .byte $ff, $ff, $00, 0
+
+        .byte $ff, $ff, $ff, $ff
+        .byte $ff, $ff, $00, $ff
 .endp
 
 .page
@@ -1032,4 +1036,61 @@ delay   lda #3
         stx index +1
         rts
 .pend
+
+
+
+wipe_stretch_table .proc
+        lda #$ff
+        .for i = 0, i < 72, i += 1
+        sta d017_table + i
+        .next
+        rts
+.pend
+
+
+stretch_table_sinus
+
+        .byte 1.5 + 2 * sin(range(64) * rad(360.0/64))
+        .byte 1.5 + 2 * sin(range(64) * rad(360.0/64))
+
+
+update_stretch_table .proc
+
+        ldy #0
+        ldx #0
+
+        .for i = 0, i < 20, i += 1
+
+        txa
+        clc
+        adc stretch_table_sinus,y
+        tax
+        lda #0
+        sta d017_table + 8 + i,x
+;        tya
+;        clc
+;        adc #2
+;        and #$3f
+;        tay
+        iny
+        iny
+        .next
+
+        lda update_stretch_table + 1
+        clc
+        adc #$01
+        and #$3f
+        sta update_stretch_table + 1
+
+
+
+        rts
+.pend
+
+
+
+
+
+
+
 
