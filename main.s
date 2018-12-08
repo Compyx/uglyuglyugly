@@ -2,6 +2,8 @@
 
         * = $0801
 
+        DEBUG = 0
+
         DYSP_HEIGHT = $60
 
 
@@ -129,7 +131,13 @@ irq2
         cmp $d012
         beq +
 +
+.if DEBUG
         dec $d020
+.else
+        nop
+        nop
+        nop
+.endif
 
         ldx #$10
 -       lda sprite_positions,x
@@ -155,7 +163,7 @@ irq2
         sta $d025       ; 4
         lda #$0b        ; 2
         sta $d026       ; 4
-        lda #$01        ; 2
+lcolor        lda #$01        ; 2
         sta $d02a       ; 4
         sta $d02b       ; 4
         sta $d02c       ; 4
@@ -164,19 +172,19 @@ irq2
                         ; ---
                         ; 46
 
-        ldx #<(FOCUS_SPRITES >> 6) + 0        ; 2
+lptr0   ldx #<(FOCUS_SPRITES >> 6) + 0        ; 2
         stx $07fb       ; 4
 
-        ldx #<(FOCUS_SPRITES >> 6) + 1 + 5        ; 2
+lptr1   ldx #<(FOCUS_SPRITES >> 6) + 1 + 5        ; 2
         stx $07fc       ; 4
 
-        ldx #<(FOCUS_SPRITES >> 6) + 2        ; 2
+lptr2   ldx #<(FOCUS_SPRITES >> 6) + 2        ; 2
         stx $07fd       ; 4
 
-        ldx #<(FOCUS_SPRITES >> 6) + 3 + 5        ; 2
+lptr3   ldx #<(FOCUS_SPRITES >> 6) + 3 + 5        ; 2
         stx $07fe       ; 4
 
-        ldx #<(FOCUS_SPRITES >> 6) + 4        ; 2
+lptr4   ldx #<(FOCUS_SPRITES >> 6) + 4        ; 2
         stx $07ff       ; 4
 
 
@@ -205,9 +213,21 @@ irq2
         lda #$1b
         sta $d011
 
+.if DEBUG
         dec $d020
+.else
+        nop
+        nop
+        nop
+.endif
         jsr wipe_clock_slide
+.if DEBUG
         dec $d020
+.else
+        nop
+        nop
+        nop
+.endif
         ; jsr update_clock_slide
 
 ;        dec $d020
@@ -283,17 +303,20 @@ xscol   lda #$03
         bpl -
         nop
         nop
-        ;bit $ea
         nop
         nop
         jsr stretcher
         lda #0
         sta $d015
+.if DEBUG
         lda $d012
         sta $0400
         dec $d020
+.endif
         jsr color_cycle_text
+.if DEBUG
         inc $d020
+.endif
 
         lda #$f9
         ldx #<irq3
@@ -331,21 +354,40 @@ irq3
 ;        bpl -
 ;        lda #$1b
 ;        sta $d011
+.if DEBUG
         dec $d020
+.endif
         jsr update_xpos
         lda #$1b
         sta $d011
+.if DEBUG
         dec $d020
+.endif
         jsr update_ypos
+.if DEBUG
         dec $d020
+.endif
         jsr SID_PLAY
-;        jsr wipe_clock_slide
+.if DEBUG
         dec $d020
+.endif
         jsr update_clock_slide
+.if DEBUG
         dec $d020
+.endif
         jsr wipe_stretch_table
+.if DEBUG
         dec $d020
+.endif
         jsr update_stretch_table
+.if DEBUG
+        dec $d020
+.endif
+        jsr switch_logo_sprites
+.if DEBUG
+        dec $d020
+.endif
+        jsr flash_logo
 
         lda #0
         sta $d020
@@ -513,13 +555,6 @@ _delay  bpl * + 2
         cpx #$e0        ; 2
         cpx #$e0        ; 2
         bit $ea         ; 3
-;        nop
-;        nop
-;        nop             ; 2
-;        inx
- ;       cpx #$80
- ;       bne -
-;        nop
         dex
         bpl -
 .endp
@@ -529,37 +564,60 @@ _delay  bpl * + 2
 d011_table
         ; inverted
 .for row = 0, row < 96, row += 1
-        .byte $10 + (((row + 3) & 7) ^ 7)
+        .byte (((row + 3) & 7) ^ 7) | $10
 .next
 
-        .align 256
+        .align 128
 .page
 d021_table
-        .byte 0, 0
-        .byte $06, $00, $06, $04, $00, $06, $04, $0e
-        .byte $00, $06, $04, $0e, $0f, $00, $06, $04
+        ;.byte $06, $00, $06, $04, $00, $06, $04, $0e
+        ;.byte $00, $06, $04, $0e, $0f, $00, $06, $04
+
         .byte $0e, $0f, $0d, $00 ,$06, $04, $0e, $0f
         .byte $0d, $01, $0d, $0f, $0e, $04, $06, $00
+
         .byte $0d, $0f, $0e, $04, $06, $00, $0f, $0e
         .byte $04, $06, $00, $0e, $04, $06, $00, $04
+
         .byte $06, $00, $06, $00, $09, $08, $0a, $0f
         .byte $07, $01, $07, $0f, $0a, $08, $09, $00
+
         .byte $06, $00, $06, $04, $00, $06, $04, $0e
         .byte $00, $06, $04, $0e, $0f, $00, $06, $04
+
         .byte $0e, $0f, $07, $00 ,$06, $04, $0e, $0f
         .byte $07, $01, $07, $0f, $0e, $04, $06, $00
+
         .byte $07, $0f, $0e, $04, $06, $00, $0f, $0e
         .byte $04, $06, $00, $0e, $04, $06, $00, $04
+
         .byte $06, $00, $06, $00, $09, $08, $0a, $0f
         .byte $07, $01, $07, $0f, $0a, $08, $09, $00
-;
-;        .byte $0b ,$00, $0b, $0c, $00, $0b, $0c, $0f
-;        .byte $00, $0b, $0c, $0f, $0d, $00, $0b, $0c
-;        .byte $0f, $0d, $01, $0d, $0f, $0f, $0c, $0b
-;        .byte $00, $0d, $0f, $0c, $0b, $00, $0f, $0c
-;        .byte $0b, $00, $0c, $0b, $00, $0b, $00, $00
 .endp
+        .align 128
+.page
+d021_table2
+        .byte $00, $06, $00, $06, $04, $00, $06, $04
+        .byte $00, $06, $04, $0e, $0f, $00, $06, $04
 
+        .byte $0e, $0f, $0d, $00 ,$06, $04, $0e, $0f
+        .byte $0d, $01, $0d, $0f, $0e, $04, $06, $00
+
+        .byte $0d, $0f, $0e, $04, $06, $00, $0f, $0e
+        .byte $04, $06, $00, $0e, $04, $06, $00, $04
+
+        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
+        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
+
+        .byte $06, $0e, $03, $01, $03, $0e, $06, $00
+
+;        .byte $07, $0f, $0e, $04, $06, $00, $0f, $0e
+;        .byte $04, $06, $00, $0e, $04, $06, $00, $04
+
+;        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
+;        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
+.endp
+        .align 128
 .page
 d025_table
         .byte $09, $00, $09, $02, $00, $09, $02, $0a
@@ -812,7 +870,7 @@ stretcher
 -       sty $d017
         lda d017_table,x
         sta $d017
-        lda d021_table,x
+        lda d021_table2 + 0,x
 ;        bit $ea
 ;        nop
 ;        nop
@@ -879,9 +937,6 @@ update_scroll_pos
         clc
         adc #$f8 - $40
         sta xpos0 + 1
-        lda scroll_msb
-        ora #%00000001
-        sta scroll_msb
 
         lda scroll_x
         sta xpos1 + 1
@@ -902,7 +957,7 @@ update_scroll_pos
         sta xpos7 + 1
 
         lda scroll_msb
-        ora #%11100000
+        ora #%11100001
         sta scroll_msb
         sta xmsb + 1
         rts
@@ -911,7 +966,7 @@ scroll_sprites
 
         lda scroll_x
         sec
-        sbc #4
+        sbc #3
         and #$3f
         sta scroll_x
         bcc +
@@ -919,10 +974,6 @@ scroll_sprites
         jsr update_scroll_pos
 
         rts
-+
-
-
-
 +
         lda xptr1 + 1
         sta xptr0 + 1
@@ -967,7 +1018,7 @@ txtidx  lda scroll_text
 +
         and #$1f
         adc #$c0
-        sta xptr7 + 1
+        sta xptr6 + 1
 
         inc txtidx + 1
         bne +
@@ -987,6 +1038,72 @@ scroll_text
         .text "even better colors    "
         .byte $43
         .byte 0
+
+switch_logo_sprites .proc
+
+delay   lda #$40
+        beq +
+        dec delay +1
+        rts
++
+        lda #$40
+        sta delay + 1
+
+index   ldx #0
+        lda logo_pointers + 0,x
+        sta lptr0 + 1
+        lda logo_pointers + 1,x
+        sta lptr1 + 1
+        lda logo_pointers + 2,x
+        sta lptr2 + 1
+        lda logo_pointers + 3,x
+        sta lptr3 + 1
+        lda logo_pointers + 4,x
+        sta lptr4 + 1
+
+        lda index + 1
+        clc
+        adc #5
+        sta index + 1
+        cmp #logo_pointers_end - logo_pointers
+        bcc +
+        lda #0
+        sta index + 1
++       rts
+.pend
+
+flash_logo .proc
+delay   lda #$03
+        beq +
+        dec delay +1
+        rts
++       lda #$03
+        sta delay + 1
+
+index   ldx #0
+        lda text_colors,x
+        bpl +
+        ldx #0
+        stx index + 1
+        lda text_colors,x
++
+        sta lcolor + 1
+        inc index + 1
+        rts
+.pend
+
+
+        MC1_SPR = (FOCUS_SPRITES & $3fff) / 64
+        MC2_SPR = MC1_SPR + 5
+logo_pointers
+        .byte MC1_SPR + 0, MC1_SPR + 1, MC1_SPR + 2, MC1_SPR + 3 ,MC1_SPR + 4
+        .byte MC1_SPR + 0, MC2_SPR + 1, MC1_SPR + 2, MC2_SPR + 3 ,MC1_SPR + 4
+        .byte MC2_SPR + 0, MC2_SPR + 1, MC2_SPR + 2, MC2_SPR + 3 ,MC2_SPR + 4
+        .byte MC2_SPR + 0, MC1_SPR + 1, MC2_SPR + 2, MC1_SPR + 3 ,MC2_SPR + 4
+logo_pointers_end
+
+
+
 
 
 
