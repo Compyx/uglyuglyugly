@@ -6,6 +6,7 @@
 
         DYSP_HEIGHT = $60
 
+        BG_COLOR = 4
 
         FOCUS_SPRITES = $3d80
 
@@ -81,16 +82,6 @@ sprite_positions
         .byte $30, $40
 
         .byte %10000000
-
-
-;.byte $00, $40
-;        .byte $30, $40
-;        .byte $60, $40
- ;      .byte $90, $40
- ;       .byte $c0, $40
-;
-;        .byte 0
-
 
 
 irq1
@@ -207,7 +198,7 @@ lptr4   ldx #<(FOCUS_SPRITES >> 6) + 4        ; 2
 
         nop
         jsr dysp
-        lda #0
+        lda #BG_COLOR
         sta $d021
         sta $d020
         lda #$1b
@@ -389,7 +380,7 @@ irq3
 .endif
         jsr flash_logo
 
-        lda #0
+        lda #BG_COLOR
         sta $d020
 
 
@@ -510,25 +501,7 @@ update_ypos
         sta update_ypos + 1
         rts
 
-
-presents_text
-        .enc "screen"
-        ;      0123456789abcdef0123456789abcdef01234567
-        .text "Compyx of Focus not so proudly presents:"
-        .text "- The ugliest Focus intro ever created -"
-
-
-
-x_sinus
-        .byte 71.5 + 72 * sin(range(128) * rad(360.0/128))
-
-y_sinus
-        .byte 23.5 + 24 * sin(range(128) * rad(360.0/128))
-
-
-
-
-
+ 
 
         .align 64
 dysp
@@ -560,84 +533,7 @@ _delay  bpl * + 2
 .endp
         rts
 
-        .align 128
-d011_table
-        ; inverted
-.for row = 0, row < 96, row += 1
-        .byte (((row + 3) & 7) ^ 7) | $10
-.next
-
-        .align 128
-.page
-d021_table
-        ;.byte $06, $00, $06, $04, $00, $06, $04, $0e
-        ;.byte $00, $06, $04, $0e, $0f, $00, $06, $04
-
-        .byte $0e, $0f, $0d, $00 ,$06, $04, $0e, $0f
-        .byte $0d, $01, $0d, $0f, $0e, $04, $06, $00
-
-        .byte $0d, $0f, $0e, $04, $06, $00, $0f, $0e
-        .byte $04, $06, $00, $0e, $04, $06, $00, $04
-
-        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
-        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
-
-        .byte $06, $00, $06, $04, $00, $06, $04, $0e
-        .byte $00, $06, $04, $0e, $0f, $00, $06, $04
-
-        .byte $0e, $0f, $07, $00 ,$06, $04, $0e, $0f
-        .byte $07, $01, $07, $0f, $0e, $04, $06, $00
-
-        .byte $07, $0f, $0e, $04, $06, $00, $0f, $0e
-        .byte $04, $06, $00, $0e, $04, $06, $00, $04
-
-        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
-        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
-.endp
-        .align 128
-.page
-d021_table2
-        .byte $00, $06, $00, $06, $04, $00, $06, $04
-        .byte $00, $06, $04, $0e, $0f, $00, $06, $04
-
-        .byte $0e, $0f, $0d, $00 ,$06, $04, $0e, $0f
-        .byte $0d, $01, $0d, $0f, $0e, $04, $06, $00
-
-        .byte $0d, $0f, $0e, $04, $06, $00, $0f, $0e
-        .byte $04, $06, $00, $0e, $04, $06, $00, $04
-
-        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
-        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
-
-        .byte $06, $0e, $03, $01, $03, $0e, $06, $00
-
-;        .byte $07, $0f, $0e, $04, $06, $00, $0f, $0e
-;        .byte $04, $06, $00, $0e, $04, $06, $00, $04
-
-;        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
-;        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
-.endp
-        .align 128
-.page
-d025_table
-        .byte $09, $00, $09, $02, $00, $09, $02, $0a
-        .byte $00, $09, $02, $0a, $0f, $00, $09, $02
-        .byte $0a, $0f, $07, $00, $09, $02, $0a, $0f
-        .byte $07, $01, $07, $0f, $0a, $02, $09, $00
-        .byte $07, $0f, $0a, $02, $09, $00, $0f, $0a
-        .byte $02, $09, $00, $0a, $02, $09, $00, $02
-        .byte $09, $00, $09, $00
-        .byte $09, $00, $09, $02, $00, $09, $02, $0a
-        .byte $00, $09, $02, $0a, $0f, $00, $09, $02
-        .byte $0a, $0f, $07, $00, $09, $02, $0a, $0f
-        .byte $07, $01, $07, $0f, $0a, $02, $09, $00
-        .byte $07, $0f, $0a, $02, $09, $00, $0f, $0a
-        .byte $02, $09, $00, $0a, $02, $09, $00, $02
-        .byte $09, $00, $09, $00
-.endp
-
-        .align 128
-
+        .align 32
 .page
 cycle_table
         ; Number of cycles to skip in the clock slide
@@ -684,6 +580,87 @@ cycle_table
         .byte 13        ; mask %1111 1000       sprite 7 & 6 & 5 & 4 & 3
 .endp
 
+
+        .align 128
+d011_table
+        ; inverted
+.for row = 0, row < 96, row += 1
+        .byte (((row + 3) & 7) ^ 7) | $10
+.next
+
+        .align 128
+.page
+d021_table
+        ;.byte $06, $00, $06, $04, $00, $06, $04, $0e
+        ;.byte $00, $06, $04, $0e, $0f, $00, $06, $04
+
+        .byte $0e, $0f, $0d, $00 ,$06, $04, $0e, $0f
+        .byte $0d, $01, $0d, $0f, $0e, $04, $06, $00
+
+        .byte $0d, $0f, $0e, $04, $06, $00, $0f, $0e
+        .byte $04, $06, $00, $0e, $04, $06, $00, $04
+
+        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
+        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
+
+        .byte $06, $00, $06, $04, $00, $06, $04, $0e
+        .byte $00, $06, $04, $0e, $0f, $00, $06, $04
+
+        .byte $0e, $0f, $07, $00 ,$06, $04, $0e, $0f
+        .byte $07, $01, $07, $0f, $0e, $04, $06, $00
+
+        .byte $07, $0f, $0e, $04, $06, $00, $0f, $0e
+        .byte $04, $06, $00, $0e, $04, $06, $00, $04
+
+        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
+        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
+.endp
+        .align 128
+.page
+d021_table2
+        .byte $01, $03, $0f, $0e, $04, $06, $00, $00
+        .byte $06, $00, $06, $04, $06, $00, $06, $04
+        .byte $0e, $04, $06, $00, $06, $00, $06, $04
+
+        .byte $0e, $0f, $0d, $00 ,$06, $04, $0e, $0f
+        .byte $0d, $01, $0d, $0f, $0e, $04, $06, $00
+
+        .byte $0d, $0f, $0e, $04, $06, $00, $0f, $0e
+        .byte $04, $06, $00, $0e, $04, $06, $00, $04
+
+;        .byte $06, $00, $06, $00, $09, $00, $06, $00
+        .byte $0e, $04, $06, $00, $06, $00, $06, $04
+
+        .byte $06, $06, $06, $04, $06, $00, $06, $04
+
+;        .byte $07, $0f, $0e, $04, $06, $00, $0f, $0e
+;        .byte $04, $06, $00, $0e, $04, $06, $00, $04
+
+;        .byte $06, $00, $06, $00, $09, $08, $0a, $0f
+;        .byte $07, $01, $07, $0f, $0a, $08, $09, $00
+.endp
+        .align 128
+.page
+d025_table
+        .byte $09, $00, $09, $02, $00, $09, $02, $0a
+        .byte $00, $09, $02, $0a, $0f, $00, $09, $02
+        .byte $0a, $0f, $07, $00, $09, $02, $0a, $0f
+        .byte $07, $01, $07, $0f, $0a, $02, $09, $00
+        .byte $07, $0f, $0a, $02, $09, $00, $0f, $0a
+        .byte $02, $09, $00, $0a, $02, $09, $00, $02
+        .byte $09, $00, $09, $00
+        .byte $09, $00, $09, $02, $00, $09, $02, $0a
+        .byte $00, $09, $02, $0a, $0f, $00, $09, $02
+        .byte $0a, $0f, $07, $00, $09, $02, $0a, $0f
+        .byte $07, $01, $07, $0f, $0a, $02, $09, $00
+        .byte $07, $0f, $0a, $02, $09, $00, $0f, $0a
+        .byte $02, $09, $00, $0a, $02, $09, $00, $02
+        .byte $09, $00, $09, $00
+.endp
+
+        .align 128
+
+
         .cerror * > $1000, "Code overlaps SID"
 
 
@@ -710,11 +687,27 @@ timing
         .fill 32 ,0
 .endp
 
-        .align 256
-.page
+        .align 128
+;.page
 mask_table
         .fill 128, 0
-.endp
+; .endp
+
+ x_sinus
+        .byte 71.5 + 72 * sin(range(128) * rad(360.0/128))
+
+y_sinus
+        .byte 23.5 + 24 * sin(range(128) * rad(360.0/128))
+
+
+presents_text
+        .enc "screen"
+        ;      0123456789abcdef0123456789abcdef01234567
+        .text "Compyx of Focus not so proudly presents:"
+        .text "- The ugliest Focus intro ever created -"
+
+
+
 
 
 wipe_clock_slide
@@ -737,8 +730,9 @@ wipe_clock_slide
 
 
 update_clock_slide
+.if DEBUG
         dec $d020
-
+.endif
         lda sprite_positions + 7
         sec
         sbc #$34
@@ -756,36 +750,43 @@ update_clock_slide
 ;        bpl -
         jsr update_mask_table_00001
 
+.if DEBUG
         dec $d020
+.endif
         lda sprite_positions + 9
         sec
         sbc #$34
         tay
         jsr update_mask_table_00010
 
+.if DEBUG
         dec $d020
+.endif
         lda sprite_positions + 11
         sec
         sbc #$34
         tay
         jsr update_mask_table_00100
-
+.if DEBUG
         dec $d020
+.endif
         lda sprite_positions + 13
         sec
         sbc #$34
         tay
         jsr update_mask_table_01000
-
+.if DEBUG
         dec $d020
+.endif
         lda sprite_positions + 15
         sec
         sbc #$34
         tay
         jsr update_mask_table_10000
 
-
+.if DEBUG
         dec $d020
+.endif
 
         ; generate final clock slide table
 
@@ -876,18 +877,20 @@ stretcher
 ;        nop
 ;        nop
         dec $d016
-        sta $d021
+        sta $d025
         inc $d016
         lda d011_table2,x
         sta $d011,y
         dex
         bpl -
+        lda #BG_COLOR
+        sta $d021
         rts
 .endp
 
         .align 128
 .page
-d017_table
+d017_table      ; 72 bytes
         .byte $00, $ff, $ff, $ff
         .byte $00, $ff, $ff, $ff
         .byte $ff, $ff, $ff, $ff
@@ -912,6 +915,7 @@ d017_table
         .byte $ff, $ff, $00, $ff
 .endp
 
+        .align 128
 .page
 d011_table2
         .for i = 0, i < 80, i += 1
