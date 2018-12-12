@@ -69,7 +69,14 @@ init
         bit $dd0d
         inc $d019
         cli
-        jmp *
+loopie  lda $dc01
+        cmp #$ef
+        bne loopie
+
+        sei
+        lda #$37
+        sta $01
+        jmp $fce2
 sprite_positions
         .byte 0, 0
         .byte 0, 0
@@ -930,11 +937,16 @@ scroll_msb
         .byte 0
 
 scroll_coder_colors
-        .byte 1, 6, 14, 0
-        .byte 7, 2, 10, 0
-        .byte 15, 11, 12, 0
-        .byte 1, 5, 13, 0
+        .byte $01, $06, $0e, 0
+        .byte $07, $02, $0a, 0
 
+        .byte $0f, $0b, $0c, 0
+        .byte $01, $05, $0d, 0
+
+        .byte $03, $00, $0e, 0
+        .byte $0a, $09, $0a, 0
+
+        .byte $01, $00, $00, 0
 
 update_scroll_pos
         lda scroll_x
@@ -1031,18 +1043,6 @@ txtidx  lda scroll_text
         rts
 
 
-scroll_text
-        .enc "screen"
-        .text "hello world compyx here"
-        .byte $1b, $1b
-        .byte $41
-        .text "more awesome coder colors"
-        .byte $1b, $1b
-        .byte $42
-        .text "even better colors    "
-        .byte $43
-        .byte 0
-
 switch_logo_sprites .proc
 
 delay   lda #$40
@@ -1116,7 +1116,7 @@ logo_pointers_end
 
 
         * = FONT_SPRITES
-        .binary "spritefont.bin"
+        .binary "sprites5.bin"
 
 
         * = FOCUS_SPRITES
@@ -1210,8 +1210,70 @@ update_stretch_table .proc
 
 
 
+scroll_text
+        .enc "screen"
+        .text "welcome to hopefully the ugliest focus intro ever"
+        .byte $1b
+        .text "   "
+        .byte $41
+        .text "i got frustrated trying to do both proper graphics and"
+        .byte $42
+        .text "proper code"
+        .byte $1c
+        .text " so i decided to go for some real ugly stuff"
+        .byte $43
+        .text " while still enjoying myself with some vicii trickery"
+        .byte $1b, $1b, $1b, $44
 
+        .text "the dysp is badly optimized "
+        .text "and uses way too much rastime"
+        .byte $1b, $1b
+        .byte $45
 
+        .text "     this scroller also sucks"
+        .byte $1c
+        .byte $42
+        .text "since i forgot how to do a low cycle strecther"
+        .byte $1b, $1b
 
+        .byte $40
+        .text "       "
+        .byte $47
+        .text "incomplete greetings to "
+
+        .byte $40
+        .text "vice team        "
+        .byte $41
+        .text "former focus members       "
+        .byte $42
+        .text "algorithm      "
+        .byte $43
+        .text "harekiet       "
+        .byte $44
+        .text "mr ammo        "
+        .byte 45
+        .text "ian coog      "
+        .byte $46
+        .text "jazzcat      "
+        .byte $47
+        .text "moloch       "
+        .byte $40
+        .text "bacchus       "
+        .byte $41
+        .text "raistlin        "
+
+        .byte $47
+        .text "and bob of censor"
+        .byte $1c,$41
+        .text "there is good chance some of the"
+        .byte $44
+        .text "trickery i use here"
+        .byte $46
+        .text "i got from looking at his code"
+        .byte 41
+        .byte $1b, $1b, $1b
+        .text "                "
+
+        .byte 0
 
 
