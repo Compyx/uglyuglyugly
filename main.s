@@ -2,14 +2,21 @@
 
         * = $0801
 
+        ; videoram for the "present bla" text
+        VIDRAM = $0800
+        ; sprite pointers relative to the vidram
+        SPRPTRS = VIDRAM + $03f8
+
         DEBUG = 0
 
         DYSP_HEIGHT = $60
 
         BG_COLOR = 4
 
+        ; location of the 5 x 2 'focus' sprites
         FOCUS_SPRITES = $3d80
 
+        ; sprite font (32 sprites = 32 * 64 = $0800)
         FONT_SPRITES = $3000
 
 ;        SID_PATH = "dexion_intro.sid"
@@ -17,29 +24,29 @@
 ;        SID_INIT = $0b06
 ;        SID_PLAY = $0b3e
 
+        ; Sweet tune by Link
         SID_PATH = "Old_Level_2.sid"
         SID_LOAD = $1000
         SID_INIT = $1000
         SID_PLAY = $1003
 
+        tmp = $02
 
         .word (+), 2018
         .null $9e, format("%d", init)
 +       .word 0
 
 
+        * = $0850
+
 init
         jsr $fda3
         jsr $fd15
         jsr $ff5b
+
         sei
         lda #$35
         sta $01
-        lda #0
-        jsr SID_INIT
-
-        jsr screen_setup
-
         lda #$7f
         sta $dc0d
         sta $dd0d
@@ -51,7 +58,7 @@ init
         stx $d01a
         lda #$1b
         sta $d011
-        lda #$17
+        lda #((VIDRAM & $3fff) >> 10) << 4 | $07
         sta $d018
         lda #$29
         ldx #<irq1
@@ -68,6 +75,13 @@ init
         bit $dc0d
         bit $dd0d
         inc $d019
+
+        lda #0
+        jsr SID_INIT
+
+        jsr screen_setup
+
+
         cli
 loopie  lda $dc01
         cmp #$ef
@@ -77,20 +91,10 @@ loopie  lda $dc01
         lda #$37
         sta $01
         jmp $fce2
-sprite_positions
-        .byte 0, 0
-        .byte 0, 0
-        .byte 0, 0
 
-        .byte $00, $40
-        .byte $50, $40
-        .byte $a0, $40
-        .byte $f0, $40
-        .byte $30, $40
+        .align 128
 
-        .byte %10000000
-
-
+.page
 irq1
         ; stabilize raster
         pha
@@ -136,12 +140,13 @@ irq2
         nop
         nop
 .endif
-
         ldx #$10
 -       lda sprite_positions,x
         sta $d000,x
         dex
         bpl -
+
+.endp
         ;lda #%11111000
         lda #%11111000
         sta $d015
@@ -161,7 +166,8 @@ irq2
         sta $d025       ; 4
         lda #$0b        ; 2
         sta $d026       ; 4
-lcolor        lda #$01        ; 2
+
+lcolor  lda #$01        ; 2
         sta $d02a       ; 4
         sta $d02b       ; 4
         sta $d02c       ; 4
@@ -169,21 +175,20 @@ lcolor        lda #$01        ; 2
         sta $d02e       ; 4
                         ; ---
                         ; 46
+lptr0   ldx #<(FOCUS_SPRITES >> 6) + 0          ; 2
+        stx SPRPTRS + 3                  ; 4
 
-lptr0   ldx #<(FOCUS_SPRITES >> 6) + 0        ; 2
-        stx $07fb       ; 4
+lptr1   ldx #<(FOCUS_SPRITES >> 6) + 1 + 5      ; 2
+        stx SPRPTRS + 4                  ; 4
 
-lptr1   ldx #<(FOCUS_SPRITES >> 6) + 1 + 5        ; 2
-        stx $07fc       ; 4
+lptr2   ldx #<(FOCUS_SPRITES >> 6) + 2          ; 2
+        stx SPRPTRS + 5                  ; 4
 
-lptr2   ldx #<(FOCUS_SPRITES >> 6) + 2        ; 2
-        stx $07fd       ; 4
+lptr3   ldx #<(FOCUS_SPRITES >> 6) + 3 + 5      ; 2
+        stx SPRPTRS + 6                  ; 4
 
-lptr3   ldx #<(FOCUS_SPRITES >> 6) + 3 + 5        ; 2
-        stx $07fe       ; 4
-
-lptr4   ldx #<(FOCUS_SPRITES >> 6) + 4        ; 2
-        stx $07ff       ; 4
+lptr4   ldx #<(FOCUS_SPRITES >> 6) + 4          ; 2
+        stx SPRPTRS + 7                  ; 4
 
 
                         ; ---
@@ -267,21 +272,21 @@ xpos7   lda #$50
 xmsb    lda #%11000000
         sta $d010
 xptr0   ldx #$c0
-        stx $07f8
+        stx SPRPTRS + 0
 xptr1   ldx #$c0
-        stx $07f9
+        stx SPRPTRS + 1
 xptr2   ldx #$c0
-        stx $07fa
+        stx SPRPTRS + 2
 xptr3   ldx #$c0
-        stx $07fb
+        stx SPRPTRS + 3
 xptr4   ldx #$c0
-        stx $07fc
+        stx SPRPTRS + 4
 xptr5   ldx #$c0
-        stx $07fd
+        stx SPRPTRS + 5
 xptr6   ldx #$c0
-        stx $07fe
+        stx SPRPTRS + 6
 xptr7   ldx #$c0
-        stx $07ff
+        stx SPRPTRS + 7
 xmc1    lda #$01
         sta $d025
 xmc2    lda #$0e
@@ -398,13 +403,19 @@ irq3
         jmp do_irq
 
 screen_setup .proc
-        ldx #$4f
+        ldx #((2 * 40) - 1)
 -       lda presents_text,x
-        sta $0400,x
-        lda #$01
-        sta $d800,x
+        sta VIDRAM,x
         dex
         bpl -
+        lda #BG_COLOR
+        inx
+-       sta $d800,x
+        sta $d900,x
+        sta $da00,x
+        sta $dae8,x
+        inx
+        bne -
         rts
 .pend
 
@@ -421,7 +432,7 @@ update_xpos
         ldx #0
 
         lda #0
-        sta $0334
+        sta tmp
 
         lda x_sinus,x
         sta sprite_positions + 6
@@ -433,9 +444,9 @@ update_xpos
         adc #$30
         sta sprite_positions + 8
         bcc +
-        lda $0334
+        lda tmp
         ora #%00010000
-        sta $0334
+        sta tmp
 +
         #upd8_x X_ADC - 4
         lda x_sinus,x
@@ -443,9 +454,9 @@ update_xpos
         adc #$60
         sta sprite_positions + 10
         bcc +
-        lda $0334
+        lda tmp
         ora #%00100000
-        sta $0334
+        sta tmp
 +
 
         #upd8_x X_ADC - 6
@@ -454,9 +465,9 @@ update_xpos
         adc #$90
         sta sprite_positions + 12
         bcc +
-        lda $0334
+        lda tmp
         ora #%01000000
-        sta $0334
+        sta tmp
 +
 
         #upd8_x X_ADC - 8
@@ -465,11 +476,11 @@ update_xpos
         adc #$c0
         sta sprite_positions + 14
         bcc +
-        lda $0334
+        lda tmp
         ora #%10000000
-        sta $0334
+        sta tmp
 +
-        lda $0334
+        lda tmp
         sta sprite_positions + $10
 
         lda update_xpos + 1
@@ -507,6 +518,18 @@ update_ypos
         and #$7f
         sta update_ypos + 1
         rts
+sprite_positions
+        .byte 0, 0
+        .byte 0, 0
+        .byte 0, 0
+
+        .byte $00, $40
+        .byte $50, $40
+        .byte $a0, $40
+        .byte $f0, $40
+        .byte $30, $40
+
+        .byte %10000000
 
  
 
@@ -944,9 +967,10 @@ scroll_coder_colors
         .byte $01, $05, $0d, 0
 
         .byte $03, $00, $0e, 0
-        .byte $0a, $09, $0a, 0
+        .byte $0a, $00, $02, 0
 
-        .byte $01, $00, $00, 0
+        .byte $01, $00, $06, 0
+        .byte $01, $00, $0e, 0
 
 update_scroll_pos
         lda scroll_x
@@ -1116,7 +1140,7 @@ logo_pointers_end
 
 
         * = FONT_SPRITES
-        .binary "sprites5.bin"
+        .binary "sprites6.bin"
 
 
         * = FOCUS_SPRITES

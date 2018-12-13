@@ -6,7 +6,7 @@ AFLAGS = -C -a
 
 TARGET = uglyuglyugly.prg
 
-$(TARGET): main.s sprites.bin
+$(TARGET): main.s sprites3.bin sprites5.bin
 	$(ASM) $(AFLAGS) main.s -o $(TARGET)
 
 all: $(TARGET)
