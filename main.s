@@ -84,8 +84,8 @@ init
 
         cli
 loopie  lda $dc01
-        cmp #$ef
-        bne loopie
+        and #$10
+        beq loopie
 
         sei
         lda #$37
@@ -1250,14 +1250,14 @@ scroll_text
         .byte $1b, $1b, $1b, $44
 
         .text "the dysp is badly optimized "
-        .text "and uses way too much rastime"
+        .text "and uses way too much rastertime"
         .byte $1b, $1b
         .byte $45
 
         .text "     this scroller also sucks"
         .byte $1c
         .byte $42
-        .text "since i forgot how to do a low cycle strecther"
+        .text "since i forgot how to do a low cycle stretcher"
         .byte $1b, $1b
 
         .byte $40
