@@ -85,7 +85,7 @@ init
         cli
 loopie  lda $dc01
         and #$10
-        beq loopie
+        bne loopie
 
         sei
         lda #$37
